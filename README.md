@@ -1,6 +1,6 @@
 # Vite-plugin-stylelint-serve
 
-------
+[![](https://img.shields.io/badge/npm-v1.0.0-blue)](https://www.npmjs.com/package/vite-plugin-stylelint-serve)
 
 Stylelint plugin for vite serve.
 
@@ -22,8 +22,6 @@ export default defineConfig({
   plugins: [stylelintPluginServe(options)],
 });
 ```
-
-------
 
 ## Options
 
@@ -83,6 +81,8 @@ whether to throw a warning
 
 whether to throw an error
 
+
 ## License
 
-MIT
+[MIT](https://github.com/Gertyxs/vite-plugin-stylelint-serve/blob/master/LICENSE)
+
