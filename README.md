@@ -9,7 +9,7 @@ Stylelint plugin for vite serve.
 ```shell
 npm install vite-plugin-stylelint-serve --save-dev
 # or
-yarn add -D vite-plugin-stylelint-seve
+yarn add -D vite-plugin-stylelint-serve
 ```
 
 ## Usage

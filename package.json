@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-stylelint-serve",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Stylelint plugin for vite serve.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -9,8 +9,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && rollup -c ./rollup.config.js && cp ./README.md ./dist/ && cp ./package.json ./dist/  && cp ./LICENSE ./dist/",
-    "build-tsc": "rimraf dist && tsc && cp ./README.md ./dist/ && cp ./package.json ./dist/ && cp ./LICENSE ./dist/"
+    "build": "rimraf dist && tsc && rollup -c ./rollup.config.js",
+    "build-tsc": "rimraf dist && tsc"
   },
   "keywords": [
     "vite-plugin",
