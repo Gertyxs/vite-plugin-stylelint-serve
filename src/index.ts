@@ -65,11 +65,13 @@ export default (options: Options): Plugin => {
         .then((data) => {
           const { errored, output } = data
           // output format log
-          if (output && (throwOnError || throwOnWarning)) {
-            console.log(output)
+          if (output) {
+            if (errored && throwOnError || throwOnWarning) {
+              console.log(output)
+            }
           }
           // at least one rule with an "error"-level severity registered a problem
-          if (errored && (throwOnError || throwOnWarning)) {
+          if (errored) {
             this.error(output)
           }
         })

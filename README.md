@@ -1,6 +1,6 @@
 # Vite-plugin-stylelint-serve
 
-[![](https://img.shields.io/badge/npm-v1.0.0-blue)](https://www.npmjs.com/package/vite-plugin-stylelint-serve)
+[![](https://img.shields.io/badge/npm-v1.0.2-blue)](https://www.npmjs.com/package/vite-plugin-stylelint-serve)
 
 Stylelint plugin for vite serve.
 
