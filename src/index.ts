@@ -48,7 +48,7 @@ export default (options: Options): Plugin => {
   const filter = createFilter(options.include, options.exclude)
 
   return {
-    name: 'vite-plugin-stylelint-server',
+    name: 'vite-plugin-stylelint-serve',
     async transform(code, id) {
       const file = normalizePath(id)
 
