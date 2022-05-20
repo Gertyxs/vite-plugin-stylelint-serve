@@ -1,11 +1,11 @@
 import * as path from 'path'
-import { createFilter } from '@rollup/pluginutils'
+import { createFilter, normalizePath } from '@rollup/pluginutils'
 import * as stylelint from 'stylelint'
+import type * as Stylelint from 'stylelint'
 import type { FormatterType } from 'stylelint'
 import type { Plugin } from 'vite'
-import { normalizePath } from './utils'
 
-export interface Options {
+export interface Options extends Stylelint.LinterOptions {
   /** store the results of processed files so that Stylelint only operates on the changed ones */
   cache?: boolean
   /** automatically fix, where possible, problems reported by rules */
@@ -22,38 +22,43 @@ export interface Options {
   throwOnWarning?: boolean
   /** whether to throw an error */
   throwOnError?: boolean
+  /** Stylelint does not throw an error when glob pattern matches no files. */
+  allowEmptyInput?: boolean
+  /** Path to a JSON, YAML, or JS file that contains your configuration object. */
+  configFile?: string
+  /** Absolute path to the directory that relative paths defining "extends" and "plugins" are relative to. Only necessary if these values are relative paths. */
+  configBasedir?: string
 }
 
-export default (options: Options): Plugin => {
-  const defaultOptions = {
-    cache: true,
-    fix: false,
-    include: ['src/**/*.css', 'src/**/*.less', 'src/**/*.scss', 'src/**/*.sass', 'src/**/*.style', 'src/**/*.vue'],
-    exclude: [/node_modules/],
-    formatter: 'string' as FormatterType,
-    throwOnWarning: true,
-    throwOnError: true
-  }
-
-  options = options ? options : {}
-  options.include = options.include ? options.include : defaultOptions.include
-  options.exclude = options.exclude ? options.exclude : defaultOptions.exclude
-  options.cache = options.cache ? options.cache : defaultOptions.cache
+export default (options: Options = {}): Plugin => {
+  options.include = options.include ? options.include : [/.*\.(vue|css|scss|sass|less|styl|svelte)$/]
+  options.exclude = options.exclude ? options.exclude : [/node_modules/]
+  options.cache = options.cache ? options.cache : true
   options.cacheLocation = options.cacheLocation ? options.cacheLocation : path.resolve(process.cwd(), './node_modules/.vite/vite-plugin-stylelint-server')
-  options.fix = options.fix ? options.fix : defaultOptions.fix
-  options.formatter = options.formatter ? options.formatter : defaultOptions.formatter
-  options.throwOnError = options.throwOnError ? options.throwOnError : defaultOptions.throwOnError
-  options.throwOnWarning = options.throwOnWarning ? options.throwOnWarning : defaultOptions.throwOnWarning
+  options.fix = options.fix ? options.fix : false
+  options.formatter = options.formatter ? options.formatter : 'string'
+  options.throwOnError = options.throwOnError ? options.throwOnError : true
+  options.throwOnWarning = options.throwOnWarning ? options.throwOnWarning : true
 
-  const filter = createFilter(options.include, options.exclude)
+  let filter: (id: string | unknown) => boolean
 
   return {
     name: 'vite-plugin-stylelint-serve',
-    async transform(code, id) {
-      const file = normalizePath(id)
+    configResolved(config) {
+      if (Array.isArray(options.exclude)) {
+        options.exclude.push(config.build.outDir)
+      } else {
+        options.exclude = [options.exclude as string | RegExp, config.build.outDir].filter((item) => !!item)
+      }
+      // create filter
+      filter = createFilter(options.include, options.exclude)
+    },
+    async transform(_, id) {
 
-      if (!filter(id)) {
-        return null
+      const file = normalizePath(id).split('?')[0];
+
+      if (!filter(file)) {
+        return null;
       }
 
       const { throwOnError, throwOnWarning, ...opts } = options
@@ -62,18 +67,20 @@ export default (options: Options): Plugin => {
           files: file,
           ...opts
         })
-        .then((data) => {
-          const { errored, output } = data
-          // output format log
-          if (output) {
-            if (errored && throwOnError || throwOnWarning) {
-              console.log(output)
+        .then(({ errored, output, results }: Stylelint.LinterResult) => {
+          results.forEach((result) => {
+            const { warnings, ignored } = result
+            if (!ignored) {
+              warnings.forEach((warning) => {
+                const { severity, text, line, column } = warning
+                if (severity === 'error' && throwOnError && output) {
+                  this.error(text, { line, column })
+                } else if (severity === 'warning' && throwOnWarning && output) {
+                  this.warn(text, { line, column })
+                }
+              })
             }
-          }
-          // at least one rule with an "error"-level severity registered a problem
-          if (errored) {
-            this.error(output)
-          }
+          })
         })
         .catch((error) => {
           console.log('please check if the configuration is correct and if there is a difference in the stylelint version: https://github.com/Gertyxs/vite-plugin-stylelint-serve')

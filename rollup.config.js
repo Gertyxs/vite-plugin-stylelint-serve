@@ -1,12 +1,12 @@
-import path from 'path'
+import * as path from 'path'
 import { terser } from 'rollup-plugin-terser'
-import filesize from 'rollup-plugin-filesize'
 import nodeResolve from '@rollup/plugin-node-resolve'
 import replace from '@rollup/plugin-replace'
 import commonjs from '@rollup/plugin-commonjs'
-import { babel } from '@rollup/plugin-babel'
-import typescript from '@rollup/plugin-typescript'
+import ts from 'rollup-plugin-typescript2'
+import dts from 'rollup-plugin-dts'
 import json from '@rollup/plugin-json'
+import { babel } from '@rollup/plugin-babel'
 
 const resolveFile = (filePath) => path.join(process.cwd(), '.', filePath)
 
@@ -23,11 +23,14 @@ const banner = `
 
 const plugins = [
   // handle Typescript
-  typescript({
-    declaration: false
-  }),
+  ts(),
   // find and package third-party modules in node_modules
-  nodeResolve({ browser: false }),
+  nodeResolve(),
+  // handle babel
+  babel({
+    exclude: '**/node_modules/**',
+    babelHelpers: 'bundled'
+  }),
   // handling json imports
   json(),
   // replace target string in file
@@ -35,31 +38,29 @@ const plugins = [
     preventAssignment: true,
     'process.env.NODE_ENV': JSON.stringify(env)
   }),
-  // handle babel
-  babel({
-    exclude: '**/node_modules/**',
-    babelHelpers: 'bundled'
-  }),
   // convert CommonJS to ES2015 modules for Rollup to process
-  commonjs(),
-  // aggregate plugin to display file size in cli
-  isProd && filesize(),
-  // compressed code
-  isProd && terser()
+  commonjs()
 ]
 
+// compressed code
+if (isProd) {
+  plugins.push(terser())
+}
+
 const config = {
-  input: 'src/index.ts',
+  input: './src/index.ts',
   external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
   output: [
     {
       file: resolveFile(pkg['main']),
-      format: 'umd',
-      name: 'w6s',
+      format: 'cjs',
+      name: 'vite-plugin-stylelint-serve',
+      exports: 'auto',
       banner: banner
     },
     {
       file: resolveFile(pkg['module']),
+      exports: 'auto',
       format: 'esm',
       banner: banner
     }
@@ -68,4 +69,10 @@ const config = {
 
 config.plugins = plugins
 
-export default config
+const dtsConfig = {
+  input: './src/index.ts',
+  output: [{ file: 'dist/index.d.ts', format: 'es' }],
+  plugins: [dts()]
+}
+
+export default [config, dtsConfig]
